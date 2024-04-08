@@ -1,6 +1,7 @@
 import json
 import numpy as np
 import itertools
+import matplotlib.pyplot as plt
 BIG_NUMBER = 1e10 # Revisar si es necesario.
 
 def lista_breakpoints(m, n,x,y):
@@ -10,12 +11,6 @@ def lista_breakpoints(m, n,x,y):
     grid_x = np.linspace(min(x), max(x), num=m, endpoint=True)
     grid_y = np.linspace(min(y), max(y), num=n, endpoint=True)
     return [(x, y) for x in grid_x for y in grid_y]
-
-def generar_breakpoints(breakpoints, k):
-    """
-    Devuelve una lista con todas las posibles combinaciones de k breakpoints.
-    """
-    return list(itertools.combinations(breakpoints, k))
 
 def optimalidad(secuencia, x, y):
     """
@@ -43,42 +38,95 @@ def factibilidad(secuencia):
             return False
     return True
 
-def brute_force(m, n, k,best, x, y):
-    puntos = lista_breakpoints(m, n,x,y)
-    breakpoints = generar_breakpoints(puntos, k)
+def fuerza_bruta(m, n, k, best, x, y, sol_parcial=None):
+    if sol_parcial is None:
+        sol_parcial = []
+    breakpoints = lista_breakpoints(m, n,x,y)
     
-    for bp in breakpoints:
-        if factibilidad(bp):
-            error = optimalidad(bp, x, y)
-            if error < best['obj']:
-                best['obj'] = error
-                best['sol'] = bp
-                
-    return best
+    if len(sol_parcial) == k:
+        if factibilidad(sol_parcial):
+            current_error = optimalidad(sol_parcial, x, y)
+            if current_error < best['obj']:
+                best['obj'] = current_error
+                best['sol'] = sol_parcial.copy()
+    else:
+        for punto in breakpoints:
+                sol_parcial.append(punto)
+                backtracking(m, n, k, best, x, y, sol_parcial)
+                sol_parcial.remove(punto) 
+def backtracking(m, n, k, best, x, y, sol_parcial=None):
+    if sol_parcial is None:
+        sol_parcial = []
+    breakpoints = lista_breakpoints(m, n,x,y)
     
+    if len(sol_parcial) == k:
+        current_error = optimalidad(sol_parcial, x, y)
+        if current_error < best['obj']:
+            best['obj'] = current_error
+            best['sol'] = sol_parcial.copy()
+    else:
+        for punto in breakpoints:
+                sol_parcial.append(punto)
+                if factibilidad(sol_parcial) and optimalidad(sol_parcial,x,y)<best['obj']:
+                    backtracking(m, n, k, best, x, y, sol_parcial)
+
+                sol_parcial.remove(punto) 
+
+def plottear_solucion(x_data, y_data, breakpoints):
+    plt.scatter(x_data, y_data, color='blue', label='Data Points')
+    breakpoints = sorted(breakpoints, key=lambda point: point[0])
+    x_breaks, y_breaks = zip(*breakpoints)
+    plt.plot(x_breaks, y_breaks, color='red', marker='o', linestyle='-', linewidth=2, markersize=5, label='Piecewise Linear Fit')
+    if x_breaks[0] > min(x_data):
+        plt.plot([min(x_data), x_breaks[0]], [y_breaks[0], y_breaks[0]], 'r--', linewidth=1)
+    if x_breaks[-1] < max(x_data):
+        plt.plot([x_breaks[-1], max(x_data)], [y_breaks[-1], y_breaks[-1]], 'r--', linewidth=1)
+
+    plt.xlabel('X')
+    plt.ylabel('Y')
+    plt.title('PWL Plotteado Sobre los Datapoints')
+    plt.legend()
+    plt.show()
+   
+
+             
+
+
+
+		
+          
+     
+        
+    
+    
+        
+		
+
 def main():
-
-	# Ejemplo para leer una instancia con json
-	instance_name = "titanium.json"
-	filename = "./data/" + instance_name
-	with open(filename) as f:
-		instance = json.load(f)
-	
-	K = instance["n"]
-	m = 6
-	n = 6
-	N = 5
-	
-	# Ejemplo para definir una grilla de m x n.
-	grid_x = np.linspace(min(instance["x"]), max(instance["x"]), num=m, endpoint=True)
-	grid_y = np.linspace(min(instance["y"]), max(instance["y"]), num=n, endpoint=True)
+    # Ejemplo para leer una instancia con json
+    instance_name = "optimistic_instance.json"
+    filename = "./data/" + instance_name
+    with open(filename) as f:
+        instance = json.load(f)
     
-	best = {'obj': float('inf'), 'sol': set()}
-	sol_parcial = set()
-	result = brute_force(m, n, K, best, instance["x"], instance["y"])
-	print("Best Objective:", result['obj'])
-	print("Best Solution:", result['sol'])
+    K = instance["n"]
+    m = 8
+    n = 8
+    N = 4
+    
+    # Ejemplo para definir una grilla de m x n.
+    #grid_x = np.linspace(min(instance["x"]), max(instance["x"]), num=m, endpoint=True)
+    #grid_y = np.linspace(min(instance["y"]), max(instance["y"]), num=n, endpoint=True)
+    
+    best = {'obj': BIG_NUMBER, 'sol': set()}
 
+    fuerza_bruta(m, n, 8, best, instance["x"], instance["y"])
+    print("Error:", best['obj'])
+    print("Mejor Solucion:", best['sol'])
+    
+    plottear_solucion(instance['x'], instance['y'], best['sol'])
+
+'''
 	best = {}
 	best['sol'] = [None]*(N+1)
 	best['obj'] = BIG_NUMBER
@@ -104,5 +152,6 @@ def main():
 	with open('solution_' + instance_name, 'w') as f:
 		json.dump(solution, f)
 
+'''
 if __name__ == "__main__":
 	main()
