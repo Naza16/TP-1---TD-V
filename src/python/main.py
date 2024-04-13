@@ -72,6 +72,32 @@ def backtracking(m, n, k, best, x, y, sol_parcial=None):
 
                 sol_parcial.remove(punto) 
 
+#Solucion Dinamica utilizando el metodo top-down
+def dinamica(m, n, x, y, k, j=None, memo=None):
+    if memo is None:
+        memo = {}
+    if j is None:
+        breakpoints = lista_breakpoints(m, n, x, y)
+        j = len(breakpoints) - 1
+    else:
+        breakpoints = lista_breakpoints(m, n, x, y)[:j+1]
+    if k == 0 or j < 0:
+        return BIG_NUMBER
+    if k == 1:
+        if factibilidad([breakpoints[0],breakpoints[j]]):
+            return optimalidad([breakpoints[0], breakpoints[j]], x, y)
+    if (k, j) in memo:
+        return memo[(k, j)]
+
+    min_error = BIG_NUMBER
+    for i in range(j):
+        current_error = optimalidad([breakpoints[i], breakpoints[j]], x, y)
+        previous_error = dinamica(m, n, x, y, k-1, i, memo)
+        min_error = min(min_error, previous_error + current_error)
+
+    memo[(k, j)] = min_error
+    return min_error
+
 def plottear_solucion(x_data, y_data, breakpoints):
     plt.scatter(x_data, y_data, color='blue', label='Data Points')
     breakpoints = sorted(breakpoints, key=lambda point: point[0])
