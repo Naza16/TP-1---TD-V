@@ -7,15 +7,12 @@
 #include <vector>
 #include <cmath>
 
-
 using namespace nlohmann;
 using namespace std;
+int BIG_NUMBER = std::numeric_limits<int>::max();
 
-
-int BIG_NUMBER = numeric_limits<int>::max();
-
-vector<double> linespace(double minVal, double maxVal, int num) {
-    vector<double> res;
+std::vector<double> linespace(double minVal, double maxVal, int num) {
+    std::vector<double> res;
     double step = (maxVal - minVal) / (num - 1);
     for(int i = 0; i < num; i++) {
         res.push_back(minVal + i * step);
@@ -23,20 +20,21 @@ vector<double> linespace(double minVal, double maxVal, int num) {
     return res;
 }
 
-vector<pair<double, double>> lista_breakpoints(int m, int n, vector<double> &x, vector<double> &y) {
-    vector<double> grillaX = linespace(*min_element(x.begin(), x.end()), *max_element(x.begin(), x.end()), m);
-    vector<double> grillaY = linespace(*min_element(y.begin(), y.end()), *max_element(y.begin(), y.end()), n);
-    vector<pair<double, double>> breakpoints;
+std::vector<std::pair<double, double>> lista_breakpoints(int m, int n, const std::vector<double> &x, const std::vector<double> &y) {
+    std::vector<double> grillaX = linespace(*std::min_element(x.begin(), x.end()), *std::max_element(x.begin(), x.end()), m);
+    std::vector<double> grillaY = linespace(*std::min_element(y.begin(), y.end()), *std::max_element(y.begin(), y.end()), n);
+    std::vector<std::pair<double, double>> breakpoints;
     for(double xi : grillaX) {
         for(double yj : grillaY) {
-            breakpoints.push_back(make_pair(xi, yj));
+            breakpoints.push_back(std::make_pair(xi, yj));
         }
     }
     return breakpoints;
 }
 
-int optimalidad(vector<pair<double, double>> &secuencia, vector<double> &x, vector<double> &y) {
-    int error = 0;
+
+double optimalidad(std::vector<std::pair<double, double>> &secuencia, const std::vector<double> &x,const std::vector<double> &y) {
+    double error = 0;
     for(size_t i = 0; i < secuencia.size() - 1; i++) {
         for(size_t j = 0; j < x.size(); j++) {
             if(x[j] > secuencia[i].first && x[j] < secuencia[i+1].first) {
@@ -54,7 +52,7 @@ int optimalidad(vector<pair<double, double>> &secuencia, vector<double> &x, vect
     return error;
 }
 
-bool factibilidad(vector<pair<double, double>> &secuencia) {
+bool factibilidad(std::vector<std::pair<double, double>> &secuencia) {
     for(size_t i = 0; i < secuencia.size() - 1; i++) {
         if(secuencia[i].first >= secuencia[i+1].first) {
             return false;
@@ -64,12 +62,12 @@ bool factibilidad(vector<pair<double, double>> &secuencia) {
 }
 
 struct MejorSolucion {
-    double obj = numeric_limits<double>::max();
-    vector<pair<double, double>> sol;
+    double obj = std::numeric_limits<double>::max();
+    std::vector<std::pair<double, double>> sol;
 };
 
-void fuerza_bruta(int m, int n, int k, vector<double> x, vector<double> y, MejorSolucion& best, vector<pair<double, double>> sol_parcial = {}) {
-    vector<pair<double, double>> breakpoints = lista_breakpoints(m, n, x, y);
+void fuerza_bruta(int m, int n, int k, std::vector<double> x, std::vector<double> y, MejorSolucion& best, std::vector<std::pair<double, double>> sol_parcial = {}) {
+    std::vector<std::pair<double, double>> breakpoints = lista_breakpoints(m, n, x, y);
     if(sol_parcial.size() == k) {
         if(factibilidad(sol_parcial)) {
             int current_error = optimalidad(sol_parcial, x, y);
@@ -89,20 +87,20 @@ void fuerza_bruta(int m, int n, int k, vector<double> x, vector<double> y, Mejor
     }
 }
 
-void backtracking(int m, int n, int k, vector<double> x, vector<double> y, MejorSolucion& best, vector<pair<double, double>> sol_parcial = {}) {
-    vector<pair<double, double>> breakpoints = lista_breakpoints(m, n, x, y);
-    if(sol_parcial.size() == k) {
-        if(factibilidad(sol_parcial)) {
-            int current_error = optimalidad(sol_parcial, x, y);
-            if(current_error < best.obj) {
-                best.obj = current_error;
-                best.sol = sol_parcial;
-            }
+void backtracking(int m, int n, int k, const std::vector<double>& x, const std::vector<double>& y, MejorSolucion& best, std::vector<std::pair<double, double>> sol_parcial = {}) {
+    auto breakpoints = lista_breakpoints(m, n, x, y);
+    
+    if (sol_parcial.size() == k) {
+        double current_error = optimalidad(sol_parcial, x, y);
+        if (current_error < best.obj && sol_parcial.back().first >= x.back() && sol_parcial.front().first <= x.front()) {
+            best.obj = current_error;
+            std::cout << "\nCurrent Error: " << current_error << ", Best Error: " << best.obj << std::endl;
+            best.sol = sol_parcial;
         }
     } else {
-        for(const auto& punto : breakpoints) {
+        for (const auto& punto : breakpoints) {
             sol_parcial.push_back(punto);
-            if (factibilidad(sol_parcial) && optimalidad(sol_parcial, x, y) < best.obj) {
+            if (factibilidad(sol_parcial)) {
                 backtracking(m, n, k, x, y, best, sol_parcial);
             }
             sol_parcial.pop_back();
@@ -110,31 +108,33 @@ void backtracking(int m, int n, int k, vector<double> x, vector<double> y, Mejor
     }
 }
 
-double programacion_dinamica(int m, int n, int k, vector<double> x, vector<double> y, MejorSolucion& best) {
-    vector<pair<double, double>> breakpoints = lista_breakpoints(m, n, x, y);
-    vector<vector<int>> dp(k + 1, vector<int>(breakpoints.size(), BIG_NUMBER));
+double programacion_dinamica(int m, int n, int k, const std::vector<double>& x, const std::vector<double>& y) {
+    std::vector<std::pair<double, double>> breakpoints = lista_breakpoints(m, n, x, y);
+    const double BIG_NUMBER = std::numeric_limits<double>::max();
+    std::vector<std::vector<double>> dp(k + 1, std::vector<double>(breakpoints.size(), BIG_NUMBER));
     
     // Initialize the first row of DP table
     for (size_t j = 0; j < breakpoints.size(); j++) {
-        vector<pair<double, double>> segment = {breakpoints[0], breakpoints[j]};
-        dp[1][j] = optimalidad(segment, x, y);
+        std::vector<std::pair<double, double>> segmento = {breakpoints[0], breakpoints[j]};
+        dp[1][j] = optimalidad(segmento, x, y);
     }
 
     // Fill the rest of the DP table
     for (int i = 2; i <= k; i++) {
         for (size_t c = 1; c < breakpoints.size(); c++) {
             for (size_t l = 0; l < c; l++) {
-                vector<pair<double, double>> segment = {breakpoints[l], breakpoints[c]};
-                if (factibilidad(segment)) {
-                    int error_segmento = optimalidad(segment, x, y);
-                    dp[i][c] = min(dp[i][c], dp[i - 1][l] + error_segmento);
+                std::vector<std::pair<double, double>> segmento = {breakpoints[l], breakpoints[c]};
+                if (factibilidad(segmento)) {
+                    double error_segmento = optimalidad(segmento, x, y);
+                    dp[i][c] = std::min(dp[i][c], dp[i - 1][l] + error_segmento);
                 }
             }
         }
     }
 
-    return *min_element(dp[k].begin(), dp[k].end());
+    return *std::min_element(dp[k].begin(), dp[k].end());
 }
+
 
 int main(int argc, char** argv) {
     char filenumber;
@@ -162,5 +162,10 @@ int main(int argc, char** argv) {
     output << instance;
     output.close();
 
-    int m = 6, n = 6, N = 5;
-    vector<double> x, y; // These should be initialized with actual
+    int m = 20, n = 20, N = 5;
+    vector<double> x=instance["x"];
+    vector<double> y=instance["y"];
+    MejorSolucion a;
+    double res=programacion_dinamica(m,n,20,x,y);
+    cout<<res;
+}
