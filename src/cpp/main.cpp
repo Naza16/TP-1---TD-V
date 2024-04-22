@@ -7,8 +7,10 @@
 #include <vector>
 #include <cmath>
 
+
 using namespace nlohmann;
 using namespace std;
+
 
 int BIG_NUMBER = numeric_limits<int>::max();
 
@@ -132,36 +134,6 @@ double programacion_dinamica(int m, int n, int k, vector<double> x, vector<doubl
     }
 
     return *min_element(dp[k].begin(), dp[k].end());
-}
-
-
-void plottear_solucion(const vector<double> &x_data, const vector<double> &y_data, vector<pair<double, double>> &breakpoints) {
-    sort(breakpoints.begin(), breakpoints.end(), [](const pair<double, double> &a, const pair<double, double> &b) {
-        return a.first < b.first;
-    });
-    sf::RenderWindow window(sf::VideoMode(800, 600), "Plot");
-    while (window.isOpen()) {
-        sf::Event event;
-        while (window.pollEvent(event)) {
-            if (event.type == sf::Event::Closed)
-                window.close();
-        }
-        window.clear(sf::Color::White);
-        for (size_t i = 0; i < x_data.size(); ++i) {
-            sf::CircleShape circle(3);
-            circle.setFillColor(sf::Color::Blue);
-            circle.setPosition(static_cast<float>(x_data[i] * 10), 600 - static_cast<float>(y_data[i] * 10));
-            circle.setOrigin(3, 3);
-            window.draw(circle);
-        }
-        sf::VertexArray lines(sf::LinesStrip, breakpoints.size());
-        for (size_t i = 0; i < breakpoints.size(); ++i) {
-            lines[i].position = sf::Vector2f(static_cast<float>(breakpoints[i].first * 10), 600 - static_cast<float>(breakpoints[i].second * 10));
-            lines[i].color = sf::Color::Red;
-        }
-        window.draw(lines);
-        window.display();
-    }
 }
 
 int main(int argc, char** argv) {
